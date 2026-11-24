@@ -1,0 +1,38 @@
+services:
+  upstream-service:
+    build: ./upstream-service
+    container_name: cb-upstream-service
+    environment:
+      - PORT=4000
+      - INITIAL_MODE=healthy
+    ports:
+      - "4000:4000"
+    networks:
+      - resilience-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  consumer-service:
+    build: ./consumer-service
+    container_name: cb-consumer-service
+    environment:
+      - PORT=3000
+      - UPSTREAM_BASE_URL=http://upstream-service:4000
+      - CB_TIMEOUT_MS=2000
+      - CB_ERROR_THRESHOLD_PCT=50
+      - CB_RESET_TIMEOUT_MS=10000
+      - CB_VOLUME_THRESHOLD=4
+    ports:
+      - "3000:3000"
+    depends_on:
+      upstream-service:
+        condition: service_healthy
+    networks:
+      - resilience-net
+
+networks:
+  resilience-net:
+    driver: bridge

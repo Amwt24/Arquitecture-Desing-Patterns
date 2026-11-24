@@ -1,0 +1,35 @@
+services:
+  hub-service:
+    build: ./hub-service
+    container_name: hub-central
+    environment:
+      - PORT=3007
+      - SPOKE_A_URL=http://spoke-service-a:4007
+      - SPOKE_B_URL=http://spoke-service-b:4008
+    ports:
+      - "3007:3007"
+    networks:
+      - hub-net
+    depends_on:
+      - spoke-service-a
+      - spoke-service-b
+
+  spoke-service-a:
+    build: ./spoke-service-a
+    container_name: hub-spoke-a-hr
+    environment:
+      - PORT=4007
+    networks:
+      - hub-net
+
+  spoke-service-b:
+    build: ./spoke-service-b
+    container_name: hub-spoke-b-finance
+    environment:
+      - PORT=4008
+    networks:
+      - hub-net
+
+networks:
+  hub-net:
+    driver: bridge

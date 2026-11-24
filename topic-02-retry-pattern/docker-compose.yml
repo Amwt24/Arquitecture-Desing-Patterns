@@ -1,0 +1,36 @@
+services:
+  flaky-payment-service:
+    build: ./flaky-payment-service
+    container_name: retry-flaky-payment
+    environment:
+      - PORT=4001
+    ports:
+      - "4001:4001"
+    networks:
+      - retry-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  retry-client-service:
+    build: ./retry-client-service
+    container_name: retry-client
+    environment:
+      - PORT=3001
+      - PAYMENT_API_URL=http://flaky-payment-service:4001
+      - MAX_RETRIES=3
+      - BASE_DELAY_MS=200
+      - MAX_DELAY_MS=5000
+    ports:
+      - "3001:3001"
+    depends_on:
+      flaky-payment-service:
+        condition: service_healthy
+    networks:
+      - retry-net
+
+networks:
+  retry-net:
+    driver: bridge

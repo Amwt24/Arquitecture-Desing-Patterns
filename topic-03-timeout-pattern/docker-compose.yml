@@ -1,0 +1,34 @@
+services:
+  slow-worker-service:
+    build: ./slow-worker-service
+    container_name: timeout-slow-worker
+    environment:
+      - PORT=4002
+    ports:
+      - "4002:4002"
+    networks:
+      - timeout-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4002/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  timeout-consumer-service:
+    build: ./timeout-consumer-service
+    container_name: timeout-consumer
+    environment:
+      - PORT=3002
+      - WORKER_URL=http://slow-worker-service:4002
+      - REQUEST_TIMEOUT_MS=1500
+    ports:
+      - "3002:3002"
+    depends_on:
+      slow-worker-service:
+        condition: service_healthy
+    networks:
+      - timeout-net
+
+networks:
+  timeout-net:
+    driver: bridge

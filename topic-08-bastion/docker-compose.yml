@@ -1,0 +1,38 @@
+services:
+  bastion-service:
+    build: ./bastion-service
+    container_name: bastion-host
+    environment:
+      - PORT=3010
+      - PRIVATE_SERVICE_URL=http://private-service:4010
+      - AUTHORIZED_USERS=admin,devops-lead,sre-oncall
+    ports:
+      - "3010:3010"   # Publicly accessible (simulates Elastic IP)
+    networks:
+      - public-subnet
+      - private-subnet
+
+  private-service:
+    build: ./private-service
+    container_name: private-db-service
+    environment:
+      - PORT=4010
+    # NO port mapping to host — simulates private subnet (no Internet Gateway route)
+    networks:
+      - private-subnet
+
+networks:
+  # Simulates public subnet (has Internet Gateway / IGW)
+  public-subnet:
+    driver: bridge
+    labels:
+      - "aws.subnet.type=public"
+      - "aws.subnet.cidr=10.0.1.0/24"
+
+  # Simulates private subnet (no IGW — only Bastion can reach it)
+  private-subnet:
+    driver: bridge
+    internal: true   # Docker internal network — no external routing
+    labels:
+      - "aws.subnet.type=private"
+      - "aws.subnet.cidr=10.0.2.0/24"

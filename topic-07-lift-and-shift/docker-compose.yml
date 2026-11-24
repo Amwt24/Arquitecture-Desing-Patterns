@@ -1,0 +1,47 @@
+services:
+  # Phase 1: Simulates On-Premises deployment
+  legacy-app-onprem:
+    build: ./legacy-app
+    container_name: lift-shift-onprem
+    environment:
+      - PORT=3008
+      - DEPLOYMENT_ENV=on-premises
+    ports:
+      - "3008:3008"
+    networks:
+      - onprem-net
+    labels:
+      - "migration.phase=1-on-premises"
+      - "migration.strategy=lift-and-shift"
+
+  # Phase 2: Simulates AWS EC2 deployment (same code, different environment variables)
+  legacy-app-aws-ec2:
+    build: ./legacy-app
+    container_name: lift-shift-aws-ec2
+    environment:
+      - PORT=3009
+      - DEPLOYMENT_ENV=aws-ec2
+      - EC2_INSTANCE_ID=i-0a1b2c3d4e5f67890
+      - EC2_INSTANCE_TYPE=m5.large
+      - AWS_REGION=us-east-1
+      - AMI_ID=ami-0abcdef1234567890
+    ports:
+      - "3009:3009"
+    networks:
+      - aws-vpc-net
+    labels:
+      - "migration.phase=3-aws-ec2"
+      - "migration.strategy=lift-and-shift"
+
+networks:
+  # Simulates On-Premises private network
+  onprem-net:
+    driver: bridge
+    labels:
+      - "environment=on-premises"
+
+  # Simulates AWS VPC private subnet
+  aws-vpc-net:
+    driver: bridge
+    labels:
+      - "environment=aws-vpc"
